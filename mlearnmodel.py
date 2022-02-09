@@ -23,9 +23,11 @@ class DataDialog(QDialog):
         self.fileName.setText(fname[0])
     # переобучение модели
     def learning(self,file,model,x_list, y_list):
+        # -- вот этот кусок стоит модифицировать на случай проблем с данными
         data = pd.read_excel(file, 1)
         X = data[x_list].values
         y = data[y_list].values
+        # --
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
         reg = pickle.load(open(model,'rb'))
         # !!Возможно только переобучение с начала невозможно добавить данные!!
@@ -35,8 +37,13 @@ class DataDialog(QDialog):
         mse = mean_squared_error(y_test, y_predict)
         rmse = np.sqrt(mse)
         r2 = r2_score(y_test, y_predict)
-        str='Metrics:\n'+'MAE: '+ mae+' \n MSE: '+ mse+'\nRMSE: '+rmse+'\nR-Squared: '+r2
+        str='Metrics:\n MAE: {}\n MSE: {}\nRMSE: {}\nR-Squared: {}'.format(mae, mse, rmse, r2)
         self.metrics.setText(str)
+        self.saveModel.clicked.connect(lambda: self.save(reg,model))
+        self.saveModel.show()
+        self.cancelModel.clicked.connect(self.cancel)
+        self.cancelModel.show()
+
     # кнопка переобучения модели
     def teachmodel(self):
         file=self.fileName.text()
@@ -49,6 +56,17 @@ class DataDialog(QDialog):
                 self.learning(file,'model1.pkl',x_columns,y_columns)
             else:
                 self.metrics.setText('Нету модели :с')   
+    # сохранить
+    def save(self,model,file):
+        pickle.dump(model,open(file,'wb'))
+        self.saveModel.clicked.disconnect()
+        self.saveModel.hide()
+    # отмена
+    def cancel(self):
+        str='Metrics:\n MAE: \n MSE: \nRMSE: \nR-Squared: '
+        self.metrics.setText(str)
+        self.cancelModel.hide()
+
 
 app=QApplication(sys.argv)
 mainwindow=DataDialog()
